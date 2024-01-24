@@ -1,30 +1,31 @@
 // SPDX-License-Identifier: UNLICENSED 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 contract Ballot{
 
     // Which should be set by the owner
-    address public chairperson;
+    address public immutable chairperson;
 
     //Which are changeable
-    address[] public voting_machines;  //Address list of eligible voting machines.
-    Vote[] public votes_array; //To store imcoming votes from the "send_vote" function
+    address[] public votingMachines;  //Address list of eligible voting machines.
+    Vote[] public votesArray; //To store imcoming votes from the "send_vote" function
     mapping(string => string) public receipts;
 
-    uint public vote_count;
-    uint public voting_end_time;
-    string public encryption_key;
-    string public decryption_key;
+    uint public voteCount;
+    uint public votingEndTime;
+    string public encryptionKey;
+    string public decryptionKey;
 
-    modifier voting_in_progress{
-        require(block.timestamp <= voting_end_time, 'Voting has ended.');
+    modifier votingInProgress{
+        require(block.timestamp <= votingEndTime, 'Voting has ended.');
         _;
     }
 
-    modifier eligible_voting_machines{
+    modifier eligibleVotingMachines{
         bool eligible = false;
-        for(uint i = 0; i < voting_machines.length; i++){
-            if(msg.sender == voting_machines[i]){
+        uint array_length = votingMachines.length;
+        for(uint i = 0; i < array_length; i++){
+            if(msg.sender == votingMachines[i]){
                 eligible = true;
                 break;
             }
@@ -38,94 +39,93 @@ contract Ballot{
         _;
     }
 
-    struct Vote {
+    struct Vote{
         string _encrypted_vote;
         string _signature;
     }
 
     /// Create a new ballot to vote until chairperson call end_voting()
-    constructor()
-        public
-    {
+    constructor(){
         chairperson = msg.sender;
-        vote_count = 0;
-        voting_end_time = block.timestamp;
-        encryption_key = '';
-        decryption_key = '';
+        voteCount = 0;
+        votingEndTime = block.timestamp;
+        encryptionKey = '';
+        decryptionKey = '';
     }
 
     // Called by voting_machines to send vote
-    function send_vote(string memory _encrypted_vote, string memory _signature)
+    function sendVote(string memory newEncryptedVote, string memory newSignature)
         public
-        voting_in_progress
-        eligible_voting_machines
+        votingInProgress
+        eligibleVotingMachines
     {
-        Vote memory new_vote = Vote(_encrypted_vote, _signature);
-        votes_array.push(new_vote);
-        vote_count += 1;
+        Vote memory new_vote = Vote(newEncryptedVote, newSignature);
+        votesArray.push(new_vote);
+        voteCount += 1;
     }
 
-    function reset_voting()
-        public
-        isChairperson
-    {
-        delete voting_machines;
-        delete votes_array;
-        vote_count = 0;
-        voting_end_time = block.timestamp;
-        encryption_key = '';
-        decryption_key = '';
-    }
-
-    function end_voting()
+    function resetVoting()
         public
         isChairperson
     {
-        voting_end_time = block.timestamp;
+        delete votingMachines;
+        delete votesArray;
+        voteCount = 0;
+        votingEndTime = block.timestamp;
+        encryptionKey = '';
+        decryptionKey = '';
     }
 
-    function start_voting(uint duration)
+    function endVoting()
         public
         isChairperson
     {
-        voting_end_time = block.timestamp + duration;
+        votingEndTime = block.timestamp;
     }
 
-    function set_eligible_voting_machine(address _addr)
+    function startVoting(uint duration)
+        public
+        isChairperson
+    {
+        votingEndTime = block.timestamp + duration;
+    }
+
+    function setEligibleVotingMachine(address newAddr)
         public
         isChairperson
     {   
         bool found = false;
-        for(uint i=0; i<voting_machines.length; i++){
-            if(voting_machines[i] == _addr){
-                found == true;
+        uint array_length = votingMachines.length;
+        for(uint i=0; i<array_length; i++){
+            if(votingMachines[i] == newAddr){
+                found = true;
                 break;
             }
         }
         
-        if(found == false){
-            voting_machines.push(_addr);
+        if(!found){
+            votingMachines.push(newAddr);
         }
     }
 
-    function send_voter_receipt(string memory _voter_receipt, string memory _encrypted_vote)
+    function sendVoterReceipt(string memory voterReceipt, string memory newEncryptedVote)
         public
-        eligible_voting_machines
+        eligibleVotingMachines
     {
-        receipts[_voter_receipt] = _encrypted_vote;
+        receipts[voterReceipt] = newEncryptedVote;
     }
 
-    function set_encryption_key(string memory _encryption_key)
+    function setEncryptionKey(string memory newEncryptionKey)
         public
         isChairperson
     {
-        encryption_key = _encryption_key;
+        encryptionKey = newEncryptionKey;
     }
 
-    function set_decryption_key(string memory _decryption_key)
+    function setDecryptionKey(string memory newDecryptionKey)
         public
         isChairperson
     {
-        decryption_key = _decryption_key;
+        decryptionKey = newDecryptionKey;
     }
 }
