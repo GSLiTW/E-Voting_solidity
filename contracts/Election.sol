@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED 
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
+import {OwnerHelpers} from "./helpers/OwnerHelpers.sol";
 
-contract Election{
+contract Election is OwnerHelpers{
     address public immutable chairperson;
 
     Ballot[] public castBallots;
@@ -23,11 +24,6 @@ contract Election{
     modifier isValidVotingMachine{
         bool valid = (validVotingMachines[msg.sender]) ? true : false;
         require(valid, 'The voting machine is not valid.');
-        _;
-    }
-
-    modifier isChairperson{
-        require(msg.sender==chairperson, 'The sender is not the chairperson.');
         _;
     }
 
@@ -63,7 +59,7 @@ contract Election{
 
     function resetVoting()
         public
-        isChairperson
+        isChairperson(chairperson)
     {
         delete castBallots;
         ballotCount = 0;
@@ -72,21 +68,21 @@ contract Election{
 
     function endVoting()
         public
-        isChairperson
+        isChairperson(chairperson)
     {
         votingEndTime = block.timestamp;
     }
 
     function startVoting(uint duration)
         public
-        isChairperson
+        isChairperson(chairperson)
     {
         votingEndTime = block.timestamp + duration;
     }
 
     function setValidVotingMachine(address machineAddress)
         public
-        isChairperson
+        isChairperson(chairperson)
     {   
         validVotingMachines[machineAddress] = true;
     }

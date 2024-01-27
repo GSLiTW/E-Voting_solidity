@@ -1,12 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED 
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {OwnerHelpers} from "./helpers/OwnerHelpers.sol";
 
-contract VoterIdentities{
+contract VoterIdentities is OwnerHelpers{
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
+
+    address public immutable chairperson;
 
     voterCredential[] public credentials;
     mapping(address => bool) public eligibleVoters; // Preregistered eligible voters' address
@@ -14,10 +17,12 @@ contract VoterIdentities{
 
     struct voterCredential{ // Credentials is voters' signatures (for now)
         bytes32 message;
-        bytes signature; 
+        bytes signature;
     }
 
-    constructor(){}
+    constructor(){
+        chairperson = msg.sender;
+    }
 
     function submitCredentials(voterCredential calldata uploadedCredential)
         public
@@ -36,6 +41,13 @@ contract VoterIdentities{
         bytes32 message = uploadedCredential.message;
         bytes memory signature = uploadedCredential.signature;
         return eligibleVoters[message.toEthSignedMessageHash().recover(signature)]; // if the voter's address is in the list, pass!
+    }
+
+    function setEligibleVoters(address newVoterAddr)
+        public
+        isChairperson(chairperson)
+    {   
+        eligibleVoters[newVoterAddr] = true;
     }
 
     function returnAllCredentials()
