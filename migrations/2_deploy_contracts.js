@@ -1,5 +1,7 @@
-var Ballot = artifacts.require("Ballot");
+var Election = artifacts.require("Election");
+var VoterIdentities = artifacts.require("VoterIdentities");
 
 module.exports = function(deployer) {
-  deployer.deploy(Ballot);
+  deployer.deploy(Election);
+  deployer.deploy(VoterIdentities);
 };
